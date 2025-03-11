@@ -1,40 +1,36 @@
-FROM python:3.10-slim
+FROM python:3.9-slim
 
 WORKDIR /app
 
-# ติดตั้ง dependencies สำหรับ OpenCV
+# ติดตั้ง dependencies ที่จำเป็นสำหรับ OpenCV และ NumPy
 RUN apt-get update && apt-get install -y \
+    build-essential \
     libgl1-mesa-glx \
     libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
     wget \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
-# ติดตั้ง NumPy เวอร์ชันที่เข้ากันได้ก่อน
-RUN pip install --no-cache-dir numpy==1.24.3
+# คัดลอก requirements.txt
+COPY requirements.txt .
 
-# ติดตั้ง dependencies หลักที่ต้องเข้ากันกับ NumPy
-RUN pip install --no-cache-dir torch==1.11.0 torchvision==0.12.0
-RUN pip install --no-cache-dir opencv-python-headless==4.5.5.64
-RUN pip install --no-cache-dir Pillow==9.0.1
+# ติดตั้ง pre-built wheels ของ NumPy และ pandas
+RUN pip install --no-cache-dir wheel
+RUN pip install --no-cache-dir numpy==1.22.4 pandas==1.4.2
 
-# ติดตั้ง Gradio
-RUN pip install --no-cache-dir gradio>=3.50.2
+# ติดตั้ง dependencies ที่เหลือ
+RUN pip install --no-cache-dir -r requirements.txt
 
-# คัดลอกโค้ดแอพพลิเคชัน
+# คัดลอกไฟล์โปรเจ็กต์ทั้งหมด
 COPY . .
 
-# สร้างโฟลเดอร์สำหรับเก็บไฟล์ชั่วคราว
-RUN mkdir -p output
-RUN mkdir -p models
+# สร้างโฟลเดอร์ที่จำเป็น
+RUN mkdir -p models output
 
-# ดาวน์โหลดโมเดล YOLOv5
-RUN if [ ! -f models/yolov5s.pt ]; then \
-    wget -q https://github.com/ultralytics/yolov5/releases/download/v6.1/yolov5s.pt -O models/yolov5s.pt; \
-    fi
+# เปิดพอร์ต
+EXPOSE 10000
 
-# ตั้งค่าพอร์ต
-EXPOSE 7860
-
-# รัน Gradio app
-CMD ["python", "app_gradio.py"]
+# คำสั่งเริ่มต้นแอป
+CMD gunicorn --bind=0.0.0.0:10000 app:app
