@@ -347,4 +347,8 @@ def detect_objects():
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=7860, debug=False)
+    # รับพอร์ตจาก environment variable (Render จะกำหนดค่านี้ให้อัตโนมัติ)
+    port = int(os.environ.get('PORT', 10000))
+    print(f"Starting server on port {port}")
+    # ใช้ '0.0.0.0' เพื่อรับการเชื่อมต่อจากภายนอก
+    app.run(host='0.0.0.0', port=port)
